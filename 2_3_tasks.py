@@ -1,38 +1,12 @@
-import chunk
-import json
-import sys
-from base64 import b64encode, b64decode
-from time import time
 from typing import Optional
 
-from util import byte_xor
-
 from Crypto.Cipher import AES
-from Crypto.Random import get_random_bytes
 from Crypto.Util.Padding import pad, unpad
 
-
-def ecb_encrypt_bytes(input_bytes: bytes, key: bytes):
-    cipher = AES.new(key, AES.MODE_ECB)
-    return cipher.encrypt(input_bytes)
-
-
-def ecb_decrypt_bytes(input_bytes: bytes, key: bytes):
-    cipher = AES.new(key, AES.MODE_ECB)
-    return cipher.decrypt(input_bytes)
-
-
-def cbc_encrypt_lib(input_path, output_path, key: bytes):
-    with open(input_path, 'r+') as file_in:
-        data = '\n'.join(file_in.readlines())
-
-    data_bytes = data.encode(errors='ignore')
-    cipher = AES.new(key, AES.MODE_CBC)
-    ct_bytes = cipher.encrypt(pad(data_bytes, AES.block_size))
-
-    with open(output_path, "w+") as file_out:
-        file_out.write(ct_bytes.hex())
-    return bytes(cipher.iv)
+from util import byte_xor
+from util import ecb_decrypt_bytes
+from util import ecb_encrypt_bytes
+from util import write_result_to_file
 
 
 def ecb_encrypt(input_path, output_path, key: bytes):
@@ -91,8 +65,7 @@ def ecb_decrypt(input_path, output_path, key: bytes):
             block = encrypted_bytes[i: i + AES.block_size]
             decrypted = ecb_decrypt_bytes(block, key)
             result.extend(decrypted)
-        with open(output_path, "w+") as file_out:
-            file_out.write(unpad(bytes(result), AES.block_size).decode())
+        write_result_to_file(result=result, output_path=output_path)
 
 
 def cbc_decrypt(input_path, output_path, key: bytes, iv: bytes):
@@ -107,8 +80,7 @@ def cbc_decrypt(input_path, output_path, key: bytes, iv: bytes):
             decrypted = ecb_decrypt_bytes(block, key)
             result.extend(byte_xor(iv_or_last_encrypted_block, decrypted))
             iv_or_last_encrypted_block = block
-        with open(output_path, "w+") as file_out:
-            file_out.write(unpad(bytes(result), AES.block_size).decode())
+        write_result_to_file(result=result, output_path=output_path)
 
 
 def pcbc_decrypt(input_path, output_path, key: bytes, iv: bytes):
@@ -128,36 +100,32 @@ def pcbc_decrypt(input_path, output_path, key: bytes, iv: bytes):
             result.extend(second_decrypted_xor)
             iv_or_last_decrypted_block = second_decrypted_xor
             previous_encrypted_block = block
-        with open(output_path, "w+") as file_out:
-            file_out.write(unpad(bytes(result), AES.block_size).decode())
+        write_result_to_file(result=result, output_path=output_path)
 
 
-def test(msg: str = "Hello big world"):
-    msg_bytes = pad(str.encode(msg), AES.block_size)
-    key = get_random_bytes(16)
-    encrypted = ecb_encrypt_bytes(msg_bytes, key)
-    print(encrypted)
-    decrypted = unpad(ecb_decrypt_bytes(encrypted, key), AES.block_size).decode()
-    print(decrypted)
-
-
-def run_algorithm(file_nr: int, algorithm: str):
+def run_algorithm(file_nr: int, algorithm: str, stages: str):
     key = bytes.fromhex('77e557185e757a97fff61e6c5d2b44cc')
     iv_bytes = bytes.fromhex('6dc65237be8e92311de34860f09812f4')
     if algorithm == "ecb":
-        ecb_encrypt(f"files/example_{file_nr}.txt", f"files/{algorithm}/example_{file_nr}_encrypted.txt", key)
-        ecb_decrypt(f"files/{algorithm}/example_{file_nr}_encrypted.txt",
-                    f"files/{algorithm}/example_{file_nr}_decrypted.txt", key)
+        if "e" in stages:
+            ecb_encrypt(f"files/example_{file_nr}.txt", f"files/{algorithm}/example_{file_nr}_encrypted.txt", key)
+        if "d" in stages:
+            ecb_decrypt(f"files/{algorithm}/example_{file_nr}_encrypted.txt",
+                        f"files/{algorithm}/example_{file_nr}_decrypted.txt", key)
     elif algorithm == "cbc":
-        cbc_encrypt(f"files/example_{file_nr}.txt", f"files/{algorithm}/example_{file_nr}_encrypted.txt", key,
-                    iv_bytes)
-        cbc_decrypt(f"files/{algorithm}/example_{file_nr}_encrypted.txt",
-                    f"files/{algorithm}/example_{file_nr}_decrypted.txt", key, iv_bytes)
+        if "e" in stages:
+            cbc_encrypt(f"files/example_{file_nr}.txt", f"files/{algorithm}/example_{file_nr}_encrypted.txt", key,
+                        iv_bytes)
+        if "d" in stages:
+            cbc_decrypt(f"files/{algorithm}/example_{file_nr}_encrypted.txt",
+                        f"files/{algorithm}/example_{file_nr}_decrypted.txt", key, iv_bytes)
     elif algorithm == "pcbc":
-        pcbc_encrypt(f"files/example_{file_nr}.txt", f"files/{algorithm}/example_{file_nr}_encrypted.txt", key,
-                     iv_bytes)
-        pcbc_decrypt(f"files/{algorithm}/example_{file_nr}_encrypted.txt",
-                     f"files/{algorithm}/example_{file_nr}_decrypted.txt", key, iv_bytes)
+        if "e" in stages:
+            pcbc_encrypt(f"files/example_{file_nr}.txt", f"files/{algorithm}/example_{file_nr}_encrypted.txt", key,
+                         iv_bytes)
+        if "d" in stages:
+            pcbc_decrypt(f"files/{algorithm}/example_{file_nr}_encrypted.txt",
+                         f"files/{algorithm}/example_{file_nr}_decrypted.txt", key, iv_bytes)
     else:
         raise RuntimeError(f"Algorithm {algorithm} not implemented.")
 
@@ -165,9 +133,5 @@ def run_algorithm(file_nr: int, algorithm: str):
 if __name__ == '__main__':
     key = bytes.fromhex('77e557185e757a97fff61e6c5d2b44cc')
     iv_bytes = bytes.fromhex('6dc65237be8e92311de34860f09812f4')
-    run_algorithm(file_nr=1, algorithm="pcbc")
-    # iv_bytes = cbc_encrypt_lib("files/example_1.txt", "files/example_1_lib.txt", key)
-    # cbc_encrypt("files/example_1.txt", "files/example_1_cbc_our.txt", key, iv_bytes)
-    # cbc_decrypt("files/example_1_cbc_our.txt", "files/example_1_cbc_our_decr.txt", key, iv_bytes)
-    # pcbc_encrypt("files//example_1.txt", "files/example_1_encrypted.txt", key, iv_bytes)
-    # pcbc_decrypt("files/example_1_pcbc_our.txt", "files/example_1_pcbc_our_decr.txt", key, iv_bytes)
+    stages = input("Stages:")
+    run_algorithm(file_nr=1, algorithm="ecb", stages=stages)
