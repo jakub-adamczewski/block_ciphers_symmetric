@@ -133,5 +133,6 @@ def run_algorithm(file_nr: int, algorithm: str, stages: str):
 if __name__ == '__main__':
     key = bytes.fromhex('77e557185e757a97fff61e6c5d2b44cc')
     iv_bytes = bytes.fromhex('6dc65237be8e92311de34860f09812f4')
-    stages = input("Stages:")
-    run_algorithm(file_nr=1, algorithm="ecb", stages=stages)
+    # e for encryption, d for decryption
+    stages = input("Stages: ")
+    run_algorithm(file_nr=1, algorithm="pcbc", stages=stages)
