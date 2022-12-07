@@ -1,7 +1,7 @@
 from typing import Optional
 
 from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad, unpad
+from Crypto.Util.Padding import pad
 
 from util import byte_xor
 from util import ecb_decrypt_bytes
@@ -134,5 +134,6 @@ if __name__ == '__main__':
     key = bytes.fromhex('77e557185e757a97fff61e6c5d2b44cc')
     iv_bytes = bytes.fromhex('6dc65237be8e92311de34860f09812f4')
     # e for encryption, d for decryption
+    mode = input("Mode: ")
     stages = input("Stages: ")
-    run_algorithm(file_nr=1, algorithm="pcbc", stages=stages)
+    run_algorithm(file_nr=1, algorithm=mode, stages=stages)

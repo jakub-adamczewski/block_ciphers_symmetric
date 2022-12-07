@@ -12,7 +12,7 @@ def measure_time(func):
         start = time()
         func(*args, **kwargs)
         end = time()
-        print('Time: %.6f' % (end - start))
+        print(': %.5f ms' % ((end - start) * 1_000))
 
     return wrapper
 
@@ -241,6 +241,7 @@ if __name__ == '__main__':
     key = get_random_bytes(16)
 
     for i in range(1, 4):
+        print(f'file example_{i}.txt. ')
         for mode, (encrypt, decrypt) in {
             'ecb': (ecb_encrypt, ecb_decrypt),
             'cbc': (cbc_encrypt, cbc_decrypt),
@@ -249,34 +250,35 @@ if __name__ == '__main__':
             'ctr': (ctr_encrypt, ctr_decrypt),
             'gcm': (gcm_encrypt, gcm_decrypt)
         }.items():
-            print(f'{mode.upper()} encrypt example_{i}.txt. ', end='')
+            print(f'{mode} encr ', end='')
 
             encrypt(f'files/example_{i}.txt',
                     f'files/{mode}_example_{i}_encrypted.txt',
                     key)
 
-            print(f'{mode.upper()} decrypt example_{i}.txt. ', end='')
+            print(f'{mode} decr', end='')
 
             decrypt(f'files/{mode}_example_{i}_encrypted.txt',
                     f'files/{mode}_example_{i}_decrypted.txt',
                     key)
-        print('# ' * 50)
+        print('_' * 50)
 
     key = get_random_bytes(AES.block_size * 2)
 
     for i in range(1, 4):
+        print(f'file example_{i}.txt. ')
         for mode, (encrypt, decrypt) in {
             'siv': (siv_encrypt, siv_decrypt)
         }.items():
-            print(f'{mode.upper()} encrypt example_{i}.txt. ', end='')
+            print(f'{mode} encr ', end='')
 
             encrypt(f'files/example_{i}.txt',
                     f'files/{mode}_example_{i}_encrypted.txt',
                     key)
 
-            print(f'{mode.upper()} decrypt example_{i}.txt. ', end='')
+            print(f'{mode} decr ', end='')
 
             decrypt(f'files/{mode}_example_{i}_encrypted.txt',
                     f'files/{mode}_example_{i}_decrypted.txt',
                     key)
-        print('# ' * 50)
+        print('_' * 50)

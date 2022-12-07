@@ -33,6 +33,6 @@ def cbc_encrypt_lib(input_path, output_path, key: bytes):
 def write_result_to_file(result, output_path):
     with open(output_path, "w+") as file_out:
         try:
-            file_out.write(unpad(bytes(result), AES.block_size).decode(errors="backslashreplace"))
+            file_out.write(unpad(bytes(result), AES.block_size).decode(errors="replace"))
         except ValueError:
-            file_out.write(bytes(result).decode(errors="backslashreplace"))
+            file_out.write(bytes(result).decode(errors="replace"))
